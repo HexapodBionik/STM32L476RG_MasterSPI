@@ -29,6 +29,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "hexapod_spi_driver.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,14 +69,6 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef * hspi)
         HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
     }
 }
-
-void sendHexapodSpi(uint8_t* pData, uint8_t data_length){
-    // First send data lenth
-    HAL_SPI_Transmit_IT(&hspi3, &data_length, 1);
-
-    HAL_SPI_Transmit_IT(&hspi3, pData, data_length);
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -121,12 +115,14 @@ int main(void)
   uint8_t data[] = "Hello world!\n";
   uint8_t data2 = 13;
 
-  volatile HAL_StatusTypeDef status;
+  RAW_SPI_Message message;
+  memcpy(message.pData, data, sizeof (data));
+  message.dataLength = sizeof(data);
 
   while (1)
   {
       HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_RESET);
-      sendHexapodSpi(data, sizeof(data));
+      sendSPIBlocking(&hspi3, &message);
       HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_SET);
       HAL_Delay(500);
     /* USER CODE END WHILE */
