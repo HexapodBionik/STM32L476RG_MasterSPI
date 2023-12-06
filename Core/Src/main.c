@@ -30,6 +30,8 @@
 /* USER CODE BEGIN Includes */
 
 #include "hexapod_spi_driver.h"
+#include "usbd_cdc_if.h"
+#include "string.h"
 
 /* USER CODE END Includes */
 
@@ -63,12 +65,33 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+// USB Transmission variables
+uint8_t RAN3_USB_Receive_Buffer[2048];
+uint8_t RAN3_USB_Receive_Flag = 0;
+uint32_t RAN3_USB_Receive_Length = 0;
+
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef * hspi)
 {
     if(hspi == &hspi3){
         HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
     }
 }
+
+int _write(int file, char *ptr, int len) {
+    static uint8_t rc = USBD_OK;
+
+    do {
+        rc = CDC_Transmit_FS(ptr, len);
+    } while (USBD_BUSY == rc);
+
+    if (USBD_FAIL == rc) {
+        /// NOTE: Should never reach here.
+        /// TODO: Handle this error.
+        return 0;
+    }
+    return len;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -112,8 +135,11 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  uint8_t data[] = "Hello world!\n";
-  uint8_t data2 = 13;
+  // MODE -> ONE_SERVO
+  // SERVO OPERATION = 0 -> Start PWM & Set angle
+  // Servo ID = 11
+  // Angle = 150.86 deg
+  uint8_t data[] = {ONE_SERVO, 11, 0,150, 86};
 
   RAW_SPI_Message message;
   memcpy(message.pData, data, sizeof (data));
@@ -121,10 +147,21 @@ int main(void)
 
   while (1)
   {
-      HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_RESET);
-      sendSPIBlocking(&hspi3, &message);
-      HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_SET);
-      HAL_Delay(500);
+      if(RAN3_USB_Receive_Flag == 1) {
+          // Copy data to RAW SPI Message buffer
+          memcpy(message.pData, data, sizeof(data));
+
+          // Send data via SPI
+          HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_RESET);
+          sendSPIBlocking(&hspi3, &message);
+          HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_SET);
+
+          // Optionally transmit ack to master device
+          printf("Acknowledged\r\n");
+
+          // Reset USB Receive flag
+          RAN3_USB_Receive_Flag = 0;
+      }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
