@@ -149,7 +149,7 @@ int main(void)
   {
       if(RAN3_USB_Receive_Flag == 1) {
           // Copy data to RAW SPI Message buffer
-          memcpy(message.pData, data, sizeof(data));
+          memcpy(message.pData, RAN3_USB_Receive_Buffer, RAN3_USB_Receive_Length);
 
           // Send data via SPI
           HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_RESET);
