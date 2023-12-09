@@ -66,9 +66,9 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 // USB Transmission variables
-uint8_t RAN3_USB_Receive_Buffer[2048];
-uint8_t RAN3_USB_Receive_Flag = 0;
-uint32_t RAN3_USB_Receive_Length = 0;
+uint8_t HEXAPOD_USB_Receive_Buffer[2048];
+uint8_t HEXAPOD_USB_Receive_Flag = 0;
+uint32_t HEXAPOD_USB_Receive_Length = 0;
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef * hspi)
 {
@@ -139,17 +139,14 @@ int main(void)
   // SERVO OPERATION = 0 -> Start PWM & Set angle
   // Servo ID = 11
   // Angle = 150.86 deg
-  uint8_t data[] = {ONE_SERVO, 11, 0,150, 86};
-
   RAW_SPI_Message message;
-  memcpy(message.pData, data, sizeof (data));
-  message.dataLength = sizeof(data);
 
   while (1)
   {
-      if(RAN3_USB_Receive_Flag == 1) {
+      if(HEXAPOD_USB_Receive_Flag == 1) {
           // Copy data to RAW SPI Message buffer
-          memcpy(message.pData, RAN3_USB_Receive_Buffer, RAN3_USB_Receive_Length);
+          memcpy(message.pData, HEXAPOD_USB_Receive_Buffer, HEXAPOD_USB_Receive_Length);
+          message.dataLength = HEXAPOD_USB_Receive_Length-1;
 
           // Send data via SPI
           HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_RESET);
@@ -160,7 +157,10 @@ int main(void)
           printf("Acknowledged\r\n");
 
           // Reset USB Receive flag
-          RAN3_USB_Receive_Flag = 0;
+          HEXAPOD_USB_Receive_Flag = 0;
+
+          // Reset variables to default values
+          memset(HEXAPOD_USB_Receive_Buffer, 0, 2048);
       }
     /* USER CODE END WHILE */
 
