@@ -260,7 +260,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   */
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
-  /* USER CODE BEGIN 6 */
+    /* USER CODE BEGIN 6 */
     USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
     USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
@@ -272,13 +272,17 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
     memset(HEXAPOD_USB_Receive_Buffer, 0, 2048);
 
     // Set variables
-    HEXAPOD_USB_Receive_Length = (*Len) + 1;
-    strlcpy(HEXAPOD_USB_Receive_Buffer, Buf, (*Len)+1);
+    HEXAPOD_USB_Receive_Length = *Len + 1;
+
+    // Copy data to buffer
+    memcpy(HEXAPOD_USB_Receive_Buffer, Buf, *Len);
+
     HEXAPOD_USB_Receive_Flag = 1;
 
     return (USBD_OK);
-  /* USER CODE END 6 */
+    /* USER CODE END 6 */
 }
+
 
 /**
   * @brief  CDC_Transmit_FS
