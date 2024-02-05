@@ -29,7 +29,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "hexapod_spi_driver.h"
+#include "hexapod_protocol.h"
 #include "usbd_cdc_if.h"
 #include "string.h"
 
@@ -69,13 +69,6 @@ void SystemClock_Config(void);
 uint8_t HEXAPOD_USB_Receive_Buffer[2048];
 uint8_t HEXAPOD_USB_Receive_Flag = 0;
 uint32_t HEXAPOD_USB_Receive_Length = 0;
-
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef * hspi)
-{
-    if(hspi == &hspi3){
-        HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-    }
-}
 
 int _write(int file, char *ptr, int len) {
     static uint8_t rc = USBD_OK;
@@ -139,7 +132,9 @@ int main(void)
   // SERVO OPERATION = 0 -> Start PWM & Set angle
   // Servo ID = 11
   // Angle = 150.86 deg
+
   RAW_SPI_Message message;
+  HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_SET);
 
   while (1)
   {
@@ -151,16 +146,19 @@ int main(void)
           // Send data via SPI
           HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_RESET);
           sendSPIBlocking(&hspi3, &message);
+          HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
           HAL_GPIO_WritePin(SS_GPIO_Port, SS_Pin, GPIO_PIN_SET);
 
           // Optionally transmit ack to master device
-          printf("Acknowledged\r\n");
+          //printf("Acknowledged\r\n");
 
           // Reset USB Receive flag
           HEXAPOD_USB_Receive_Flag = 0;
 
           // Reset variables to default values
           memset(HEXAPOD_USB_Receive_Buffer, 0, 2048);
+
+          HEXAPOD_USB_Receive_Length = 0;
       }
     /* USER CODE END WHILE */
 
